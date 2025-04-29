@@ -1,0 +1,17 @@
+# ollama
+OLLAMA_HOST=<ollama_server_ipv4>:<ollama_server_port>
+
+# qdrant
+QDRANT_URL="http://<qdrant_container_ipv4>:6333"
+
+# airflow
+# echo -e "AIRFLOW_UID=$(id -u)" > .env
+AIRFLOW_UID=$(id -u)
+
+# openai
+OPENAI_API_KEY=<openai_api_key>
+
+# kubernetes
+# kubernetes describe svc <SERVICE_NAME> | grep Endpoints
+KUBERNETES_SERVICE_HOST=https://<kubernetes_endpoint_ipv4>
+KUBERNETES_SERVICE_PORT=:<kubernetes_endpoint_port>

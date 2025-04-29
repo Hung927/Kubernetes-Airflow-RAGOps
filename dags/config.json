@@ -1,0 +1,17 @@
+{
+    "uploaded_files": [],
+    "file_list": [
+        "squad.json",
+        "paper.pdf"    
+    ],
+    "rag_pipeline_config": {
+        "use_expert_retrieval": true,
+        "use_similarity_retrieval": true,
+        "use_keyword_retrieval": true,
+        "use_rerank": true,
+        "use_ragas": false
+    },
+    "document_types": "squad",
+    "embed_model": "imac/zpoint_large_embedding_zh",
+    "llm_model": "gemma2:9b"
+}

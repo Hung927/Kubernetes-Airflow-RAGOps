@@ -1,0 +1,10 @@
+apache-airflow==2.10.5
+python-dotenv==1.1.0
+ollama==0.4.7
+qdrant-client==1.13.3
+ragas==0.2.14
+langchain_text_splitters==0.3.8
+langchain-ollama==0.2.3
+marker-pdf==1.6.2
+kubernetes==31.0.0
+apache-airflow-providers-cncf-kubernetes=10.4.3
