@@ -63,6 +63,7 @@ default_args = {
 def get_user_question():
     """Get a random user question from the qa_pairs.json file."""
     
+    # return "What did Stiglitz present in 2009 regarding global inequality?"
     qa_path = os.path.join(os.path.dirname(__file__), "data/qa_pairs.json")
     try:
         with open(qa_path, "r") as f:
@@ -75,22 +76,23 @@ def get_user_question():
     return user_question
     # return "Where did the Normans and Byzantines sign the peace treaty?"
 
-with DAG("K8S_Query_DAG", default_args=default_args, schedule=timedelta(hours=12), catchup=False) as dag:
+with DAG("RAG_Query_DAG2", default_args=default_args, schedule=timedelta(hours=12), catchup=False) as dag:
     """RAG pipeline DAG for retrieval-augmented generation (RAG) using Ollama and Qdrant."""
     
-    retrieval_image = "shaohung/airflow-retrieval:v1.0"
+    retrieval_image = "shaohung/airflow-retrieval:v1.1"
     rerank_image = "shaohung/airflow-rerank:v1.0"
     llm_image = "shaohung/airflow-llm:v1.0"
+    ragas_image = "shaohung/airflow-ragas:v1.0"
     
     
     ollama_url = os.getenv("OLLAMA_HOST", "10.20.1.95:11433")
     qdrant_url = os.getenv("QDRANT_URL", "http://127.0.0.1:6333")
     
-    ollama_model = config_data.get("ollama_model", "gemma2:9b")
+    llm_model = config_data.get("llm_model", "gemma2:9b")
     embed_model = config_data.get("embed_model", "imac/zpoint_large_embedding_zh")
     
-    random_question_task = PythonOperator(
-        task_id="random_question_task",
+    generate_query_task = PythonOperator(
+        task_id="generate_query_task",
         python_callable=get_user_question,
     )
     
@@ -107,7 +109,7 @@ with DAG("K8S_Query_DAG", default_args=default_args, schedule=timedelta(hours=12
                 "--types", "expert",
                 "--topk", "5",
                 "--embed-model", embed_model,
-                "--user-question", "{{ ti.xcom_pull(task_ids='random_question_task', key='return_value') }}"
+                "--user-question", "{{ ti.xcom_pull(task_ids='generate_query_task', key='return_value') }}"
             ],
             env_vars=[
                 V1EnvVar(name="OLLAMA_HOST", value=ollama_url), 
@@ -126,8 +128,8 @@ with DAG("K8S_Query_DAG", default_args=default_args, schedule=timedelta(hours=12
             image=llm_image,
             arguments=[
                 "--types", "validation",
-                "--model", ollama_model,
-                "--user-question", "{{ ti.xcom_pull(task_ids='random_question_task', key='return_value') }}"
+                "--model", llm_model,
+                "--user-question", "{{ ti.xcom_pull(task_ids='generate_query_task', key='return_value') }}"
             ],
             env_vars=[
                 V1EnvVar(name="OLLAMA_HOST", value=ollama_url)
@@ -166,7 +168,7 @@ with DAG("K8S_Query_DAG", default_args=default_args, schedule=timedelta(hours=12
                 "--types", "similarity",
                 "--topk", "10",
                 "--embed-model", embed_model,
-                "--user-question", "{{ ti.xcom_pull(task_ids='random_question_task', key='return_value') }}"
+                "--user-question", "{{ ti.xcom_pull(task_ids='generate_query_task', key='return_value') }}"
             ],
             env_vars=[
                 V1EnvVar(name="OLLAMA_HOST", value=ollama_url), 
@@ -191,8 +193,8 @@ with DAG("K8S_Query_DAG", default_args=default_args, schedule=timedelta(hours=12
             image=llm_image,
             arguments=[
                 "--types", "keyword",
-                "--model", ollama_model,
-                "--user-question", "{{ ti.xcom_pull(task_ids='random_question_task', key='return_value') }}"
+                "--model", llm_model,
+                "--user-question", "{{ ti.xcom_pull(task_ids='generate_query_task', key='return_value') }}"
             ],
             env_vars=[
                 V1EnvVar(name="OLLAMA_HOST", value=ollama_url)
@@ -214,7 +216,7 @@ with DAG("K8S_Query_DAG", default_args=default_args, schedule=timedelta(hours=12
                 "--types", "keyword",
                 "--topk", "10",
                 "--embed-model", embed_model,
-                "--user-question", "{{ ti.xcom_pull(task_ids='random_question_task', key='return_value') }}",
+                "--user-question", "{{ ti.xcom_pull(task_ids='generate_query_task', key='return_value') }}",
                 "--keyword-list", "{{ ti.xcom_pull(task_ids='keyword_extraction_task', key='return_value') }}"
             ],
             env_vars=[
@@ -242,7 +244,7 @@ with DAG("K8S_Query_DAG", default_args=default_args, schedule=timedelta(hours=12
             image=rerank_image,
             cmds=["python", "rerank_run.py"],
             arguments=[
-                "--user-question", "{{ ti.xcom_pull(task_ids='random_question_task', key='return_value') }}",
+                "--user-question", "{{ ti.xcom_pull(task_ids='generate_query_task', key='return_value') }}",
                 "--similarity-results", "{{ ti.xcom_pull(task_ids='similarity_retrieval_task', key='return_value') }}",
                 "--keyword-results", "{{ ti.xcom_pull(task_ids='keyword_retrieval_task', key='return_value') }}",
                 "--topk", "5"
@@ -258,8 +260,8 @@ with DAG("K8S_Query_DAG", default_args=default_args, schedule=timedelta(hours=12
         reranking_task = None
     
     llm_task_op_kwargs = ["--types", "rag" if (similarity_retrieval_task or keyword_retrieval_task) else "general"]
-    llm_task_op_kwargs.extend(["--model", ollama_model])
-    llm_task_op_kwargs.extend(["--user-question", "{{ ti.xcom_pull(task_ids='random_question_task', key='return_value') }}"])
+    llm_task_op_kwargs.extend(["--model", llm_model])
+    llm_task_op_kwargs.extend(["--user-question", "{{ ti.xcom_pull(task_ids='generate_query_task', key='return_value') }}"])
     if reranking_task:
         llm_task_op_kwargs.extend(["--search-results-types", "reranking_task"])
         llm_task_op_kwargs.extend(["--search-results", "{{ ti.xcom_pull(task_ids='reranking_task', key='return_value') }}" ])
@@ -296,9 +298,9 @@ with DAG("K8S_Query_DAG", default_args=default_args, schedule=timedelta(hours=12
             task_id="ragas_evaluation_task",
             name="ragas-evaluation",
             namespace="default",
-            image="shaohung/airflow-ragas:v1.0",
+            image=ragas_image,
             arguments=[
-                "--user-question", "{{ ti.xcom_pull(task_ids='random_question_task', key='return_value') }}",
+                "--user-question", "{{ ti.xcom_pull(task_ids='generate_query_task', key='return_value') }}",
                 "--llm-answer", "{{ ti.xcom_pull(task_ids='llm_task', key='return_value') }}",
                 "--similarity-results", "{{ ti.xcom_pull(task_ids='similarity_retrieval_task', key='return_value') }}",
                 "--keyword-results", "{{ ti.xcom_pull(task_ids='keyword_retrieval_task', key='return_value') }}",
@@ -323,10 +325,10 @@ with DAG("K8S_Query_DAG", default_args=default_args, schedule=timedelta(hours=12
     
         
     retrieval_tasks = []
-    temp_tasks = random_question_task
+    temp_tasks = generate_query_task
     
     if USE_EXPERT:
-        random_question_task >> expert_retrieval_task >> expert_validation_task >> expert_branching_task
+        generate_query_task >> expert_retrieval_task >> expert_validation_task >> expert_branching_task
         temp_tasks = expert_branching_task  
 
     if USE_SIMILARITY:

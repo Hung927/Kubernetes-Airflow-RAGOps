@@ -23,20 +23,20 @@ from plugins import json_update_sensor
 
 default_args = {
   "owner": "HUNG",
-  "start_date": datetime(2025, 4, 28),
+  "start_date": datetime(2025, 5, 29),
   "retries": 3,
   "retry_delay": duration(minutes=5),
 }
 
 
-with DAG("K8S_Indexing_DAG", default_args=default_args, schedule="@once", catchup=False) as dag:
+with DAG("RAG_Indexing_DAG", default_args=default_args, schedule="@once", catchup=False) as dag:
     """Config file upload check and data processing pipeline DAG."""
     
     config_data = json.load(open("dags/config.json", "r"))
     ollama_url = os.getenv("OLLAMA_HOST", "10.20.1.95:11433")
     qdrant_url = os.getenv("QDRANT_URL", "http://127.0.0.1:6333")
     data_processing_image = "shaohung/airflow-data-processing:v1.0"
-    data_embedding_image = "shaohung/airflow-data-embedding:v1.0"
+    data_embedding_image = "shaohung/airflow-data-embedding:v1.1"
     
     config_volume = V1Volume(
         name='airflow-config',
@@ -58,7 +58,7 @@ with DAG("K8S_Indexing_DAG", default_args=default_args, schedule="@once", catchu
     )
 
         
-    uploaded_files_check_task = json_update_sensor.JsonUpdateSensor(
+    uploaded_files_check_task = json_update_sensor.ConfigUpdateSensorOperator(
         task_id="uploaded_files_check_task",
         filepath="dags/config.json",
         key="uploaded_files",
@@ -67,9 +67,9 @@ with DAG("K8S_Indexing_DAG", default_args=default_args, schedule="@once", catchu
         timeout=60
     )
     
-    data_processing_task = KubernetesPodOperator(
-        task_id="data_processing_task",
-        name="data-processing",
+    data_preprocessing_task = KubernetesPodOperator(
+        task_id="data_preprocessing_task",
+        name="data-preprocessing",
         namespace="default",
         image=data_processing_image,
         cmds=["python", "data_processing_run.py"],
@@ -87,7 +87,7 @@ with DAG("K8S_Indexing_DAG", default_args=default_args, schedule="@once", catchu
         dns_config=dns_config,
     )
     
-    file_list_update_check_task = json_update_sensor.JsonUpdateSensor(
+    file_list_update_check_task = json_update_sensor.ConfigUpdateSensorOperator(
         task_id="file_list_update_check_task",
         filepath="dags/config.json",
         key="file_list",
@@ -96,9 +96,9 @@ with DAG("K8S_Indexing_DAG", default_args=default_args, schedule="@once", catchu
         timeout=600
     )
     
-    data_embedding_task = KubernetesPodOperator(
-        task_id="data_embedding_task",
-        name="data-embedding",
+    embedding_vector_processing_task = KubernetesPodOperator(
+        task_id="embedding_vector_processing_task",
+        name="data-embedding-vector-processing",
         namespace="default",
         image=data_embedding_image,
         cmds=["python", "data_embedding_run.py"],
@@ -119,5 +119,5 @@ with DAG("K8S_Indexing_DAG", default_args=default_args, schedule="@once", catchu
         do_xcom_push=True,
     )    
     
-    uploaded_files_check_task >> data_processing_task
-    file_list_update_check_task >> data_embedding_task
+    uploaded_files_check_task >> data_preprocessing_task
+    file_list_update_check_task >> embedding_vector_processing_task
