@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ragas-service
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ragas-service
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: ragas-service
+    spec:
+      containers:
+      - name: ragas-service
+        image: shaohung/ragas-api:v1.0
+        ports:
+        - containerPort: 8003
+        env:
+        - name: OPENAI_API_KEY
+          value: <OPENAI_API_KEY>
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8003
+          initialDelaySeconds: 30
+          periodSeconds: 120
+          timeoutSeconds: 5
+          failureThreshold: 3
+      dnsConfig:
+        nameservers:
+          - 8.8.8.8
+          - 8.8.4.4
+        options:
+          - name: ndots
+            value: "5"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ragas-service
+  namespace: default
+spec:
+  selector:
+    app: ragas-service
+  ports:
+  - port: 8003
+    nodePort: 30083
+  type: NodePort
