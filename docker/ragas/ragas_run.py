@@ -42,7 +42,7 @@ def main():
                 self.rerank_results = rerank_results
             
             def xcom_pull(self, task_ids, key=None):
-                if task_ids == 'random_question_task' and key == 'return_value':
+                if task_ids == 'generate_query_task' and key == 'return_value':
                     return self.user_question
                 elif task_ids == 'llm_task' and key == 'return_value':
                     return self.llm_answer

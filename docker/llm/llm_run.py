@@ -58,7 +58,7 @@ def main():
                 self.search_results = search_results
             
             def xcom_pull(self, task_ids, key=None):
-                if task_ids == 'random_question_task' and key == 'return_value':
+                if task_ids == 'generate_query_task' and key == 'return_value':
                     return args.user_question or "What is the current number of electors currently in a Scottish Parliament constituency?"
                 elif task_ids == self.search_results_types and key == 'return_value':
                     try:

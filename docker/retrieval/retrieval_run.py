@@ -47,7 +47,7 @@ def main():
                 self.keyword_list = keyword_list
 
             def xcom_pull(self, task_ids: str, key: str=None):
-                if task_ids == 'random_question_task' and key == 'return_value':
+                if task_ids == 'generate_query_task' and key == 'return_value':
                     return self.user_question or "What is the current number of electors currently in a Scottish Parliament constituency?"
                 elif task_ids == 'keyword_extraction_task' and key == 'return_value':
                     try:

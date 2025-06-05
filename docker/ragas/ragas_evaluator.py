@@ -31,7 +31,7 @@ class Ragas:
             user_question (str): The user's question.
         """
         try:
-            user_question = ti.xcom_pull(task_ids='random_question_task', key='return_value')
+            user_question = ti.xcom_pull(task_ids='generate_query_task', key='return_value')
             logging.info(f"User question: {user_question}")
             return user_question
         except Exception as e:
@@ -195,9 +195,9 @@ class Ragas:
     
     def ragas(self, **kwargs) -> dict:
         retrieval_modes = {
+            "rerank": kwargs.get('USE_RERANK', False),
             "similarity": kwargs.get('USE_SIMILARITY', False),
-            "keyword": kwargs.get('USE_KEYWORD', False),
-            "rerank": kwargs.get('USE_RERANK', False)
+            "keyword": kwargs.get('USE_KEYWORD', False)
         }
         
         if not any(retrieval_modes.values()):
@@ -218,6 +218,7 @@ class Ragas:
                (mode == "keyword" and not rag_results.get('contexts')[0]):
                 logging.warning(f"No relevant information found in the {mode} retrieval.")
                 evaluation_scores = {"status": "No relevant information found"}
+                evaluation_scores_result[mode] = evaluation_scores
             else:                
                 evaluation_results = self.evaluate_with_ragas(rag_results)
                 logging.info(f"{mode.capitalize()} evaluation results: {evaluation_results}")
@@ -232,7 +233,8 @@ class Ragas:
                     logging.error(f"Unexpected return type from ragas_evaluate for {mode}: {type(evaluation_results)}")
                     evaluation_scores = {"error": "Unexpected evaluation result type"}
                 
-            evaluation_scores_result[mode] = evaluation_scores
+                evaluation_scores_result[mode] = evaluation_scores
+                break
         
         return evaluation_scores_result
         

@@ -18,5 +18,4 @@ find /airflow -type d | sort\n\
 echo "Executing main script:"\n\
 python retrieval_run.py "$@"' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
-# 容器入口點
 ENTRYPOINT ["/app/entrypoint.sh"]

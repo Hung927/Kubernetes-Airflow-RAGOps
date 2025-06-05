@@ -14,7 +14,7 @@ class Reranker:
             user_question (str): The user's question.
         """
         try:
-            user_question = ti.xcom_pull(task_ids='random_question_task', key='return_value')
+            user_question = ti.xcom_pull(task_ids='generate_query_task', key='return_value')
             return user_question
         except Exception as e:
             logging.error(f"Error retrieving user question: {e}")
