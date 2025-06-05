@@ -2,7 +2,7 @@ import os
 import json
 from airflow.sensors.base import BaseSensorOperator
 
-class JsonUpdateSensor(BaseSensorOperator):
+class ConfigUpdateSensorOperator(BaseSensorOperator):
     def __init__(self, filepath: str, key: str, expected_value: str, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.filepath = filepath
