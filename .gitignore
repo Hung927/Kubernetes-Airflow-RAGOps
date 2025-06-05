@@ -3,6 +3,7 @@
 logs/
 /dags/.cache
 /docker/rerank/.cache
+/docker/rerank-api/.cache
 __pycache__
 qdrant_storage
 
@@ -12,3 +13,7 @@ airflow.db
 airflow-webserver.pid
 standalone_admin_password.txt
 webserver_config.py
+
+# scripts
+result
+rag_test_*

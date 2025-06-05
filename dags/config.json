@@ -1,8 +1,8 @@
 {
     "uploaded_files": [],
     "file_list": [
-        "squad.json",
-        "paper.pdf"    
+        "paper.pdf",
+        "squad.json"
     ],
     "rag_pipeline_config": {
         "use_expert_retrieval": true,

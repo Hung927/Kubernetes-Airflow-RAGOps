@@ -15,3 +15,13 @@ OPENAI_API_KEY=<openai_api_key>
 # kubernetes describe svc <SERVICE_NAME> | grep Endpoints
 KUBERNETES_SERVICE_HOST=https://<kubernetes_endpoint_ipv4>
 KUBERNETES_SERVICE_PORT=:<kubernetes_endpoint_port>
+
+# service api hosts and ports
+retrieval_api_host=<retrieval-service_ipv4>
+retrieval_api_port=<retrieval-service_port>
+rerank_api_host=<rerank-service_ipv4>
+rerank_api_port=<rerank-service_port>
+llm_api_host=<llm-service_ipv4>
+llm_api_port=<llm-service_port>
+ragas_api_host=<ragas-service_ipv4>
+ragas_api_port=<ragas-service_port>
